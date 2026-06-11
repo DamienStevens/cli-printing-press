@@ -1,5 +1,28 @@
 # Changelog
 
+## [4.25.0](https://github.com/mvanhorn/cli-printing-press/compare/v4.24.0...v4.25.0) (2026-06-11)
+
+
+### Features
+
+* **cli:** add Apify actor reachability audit ([#2867](https://github.com/mvanhorn/cli-printing-press/issues/2867)) ([b0c5b0b](https://github.com/mvanhorn/cli-printing-press/commit/b0c5b0ba1f33c256d9cd47b761da93750eb657a8))
+
+
+### Bug Fixes
+
+* **catalog:** add health category ([#2868](https://github.com/mvanhorn/cli-printing-press/issues/2868)) ([9f9ff30](https://github.com/mvanhorn/cli-printing-press/commit/9f9ff305978e6e65b50b64d398076d4312cc9111))
+* **cli:** allow synthetic phase5 external credential skips ([#2866](https://github.com/mvanhorn/cli-printing-press/issues/2866)) ([89b27fc](https://github.com/mvanhorn/cli-printing-press/commit/89b27fcc268ebcc4f69e7da7f904040846de9ebf))
+* **cli:** emit local data layer for syncable APIs ([#2881](https://github.com/mvanhorn/cli-printing-press/issues/2881)) ([a6da532](https://github.com/mvanhorn/cli-printing-press/commit/a6da5322b69039beae067d7eeb9a4fd69bf5f099))
+* **cli:** filter telemetry hosts in browser sniff ([#2865](https://github.com/mvanhorn/cli-printing-press/issues/2865)) ([08864e4](https://github.com/mvanhorn/cli-printing-press/commit/08864e4169a3c6ab40ebecf643773815ea93a96a))
+* **cli:** flag oauth2 refresh missing client id ([#2902](https://github.com/mvanhorn/cli-printing-press/issues/2902)) ([4ceaada](https://github.com/mvanhorn/cli-printing-press/commit/4ceaada8c78f7d5dc7ab541f55b47803581c6e15))
+* **cli:** honor auth preference in dogfood manifest ([#2878](https://github.com/mvanhorn/cli-printing-press/issues/2878)) ([99e73ac](https://github.com/mvanhorn/cli-printing-press/commit/99e73ac5ce882d8776bae92585d2b5eed7efacb4))
+* **cli:** make generated auth hints scheme-aware ([#2875](https://github.com/mvanhorn/cli-printing-press/issues/2875)) ([8222735](https://github.com/mvanhorn/cli-printing-press/commit/822273573f2a9a0c8572a2839cdbc97241cc5e55))
+* **cli:** preserve authored generated descriptions ([#2870](https://github.com/mvanhorn/cli-printing-press/issues/2870)) ([a97cddc](https://github.com/mvanhorn/cli-printing-press/commit/a97cddc7d769dc88b529d76b1adc3afededa7898))
+* **cli:** preserve Windows companion CLI fallback ([#2876](https://github.com/mvanhorn/cli-printing-press/issues/2876)) ([a113f4c](https://github.com/mvanhorn/cli-printing-press/commit/a113f4c2b95e63d8289f34d0bb8b370cc22a6828))
+* **cli:** use schema hints in generated examples ([#2874](https://github.com/mvanhorn/cli-printing-press/issues/2874)) ([175105f](https://github.com/mvanhorn/cli-printing-press/commit/175105f2be66a2afeaa118cad903f3db7e608789))
+* **cli:** warn on unenriched promote manifests ([#2871](https://github.com/mvanhorn/cli-printing-press/issues/2871)) ([3c14fcb](https://github.com/mvanhorn/cli-printing-press/commit/3c14fcbe21be17a1bbdd868ec680335ecc8642a6))
+* skip permission test on Windows where Getuid is unsupported ([#2900](https://github.com/mvanhorn/cli-printing-press/issues/2900)) ([b3fbb2e](https://github.com/mvanhorn/cli-printing-press/commit/b3fbb2ec8c119d022b7f35e2dd49fba31fff6853))
+
 ## [4.24.0](https://github.com/mvanhorn/cli-printing-press/compare/v4.23.1...v4.24.0) (2026-06-08)
 
 
