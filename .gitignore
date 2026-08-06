@@ -17,6 +17,10 @@ library/
 dist/
 claude-upgrade-progress.json
 
+# Recall counters are per-machine usage state, not settled content. Committing
+# them would conflict on every branch; losing them costs a counter, not a lesson.
+docs/solutions/.recall-log.jsonl
+
 # Python bytecode (verify-supply-chain scripts)
 __pycache__/
 *.pyc

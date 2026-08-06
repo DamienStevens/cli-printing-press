@@ -145,7 +145,7 @@ The same lockstep applies to the learn-loop templates under `internal/generator/
 - `docs/ATTRIBUTION.md` - Creator + contributors model: resolver fallback, validation layers, legacy-field dual-write window
 - `docs/ARTIFACTS.md` - Local library, manuscripts, and public-library flow
 - `docs/DOCS.md` - Doc-authoring rules, including pointer-rot prevention
-- `docs/solutions/` - Documented solutions to past problems (bugs, design patterns, best practices, conventions), organized by category subdir with YAML frontmatter (`module`, `tags`, `problem_type`). Relevant when implementing or debugging in documented areas.
+- `docs/solutions/` - Documented solutions to past problems (bugs, design patterns, best practices, conventions), organized by category subdir with YAML frontmatter (`module`, `tags`, `problem_type`). **Query it, do not browse it:** run `cli-printing-press recall --module <module>` before editing a documented module and state in the plan which returned lessons apply and which do not. `cli-printing-press learn-audit` reports whether the lessons are being recalled and whether any symptom has recurred since.
 
 ## Naming and Disambiguation
 Use canonical terms so intent stays unambiguous. In skills and user-facing output (GitHub issues, retros, confirmation prompts), call the system **"the Printing Press"**, never "the machine"; subsystem names (generator, scorer, skills, binary) are fine alongside it. When user phrasing is ambiguous and the distinction affects what action to take, ask before acting.

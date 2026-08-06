@@ -375,8 +375,23 @@ For each candidate, ask in order:
    been "no" twice and the retro is becoming a wishlist), or reframe as a smaller
    incremental fix that addresses part of the friction. Search:
    `grep -l "<finding keywords>" "$PRESS_MANUSCRIPTS"/*/proofs/*-retro-*.md`
+6. **Is this already a settled lesson?** Question 5 searches prior *retros* — this
+   one searches the lessons that were actually merged. Run, from the repo root:
 
-Survivors of these five questions go to Phase 3. Dropped candidates are recorded
+   ```bash
+   cli-printing-press recall --module <module> --tags <tags>
+   cli-printing-press recall --symptom "<one line of the observed symptom>"
+   ```
+
+   If a lesson comes back that already covers this finding, the finding is **not**
+   a new candidate. It is either (a) the lesson recurring — say so explicitly and
+   name the doc, because a recurrence is a much stronger signal than a fresh
+   finding, or (b) already fixed, and the retro should drop it. **Filing a second
+   solution doc for a lesson that already exists is the failure this question
+   prevents.** Running `recall` is not optional: a triage that never queried the
+   settled lessons has not been triaged against them.
+
+Survivors of these six questions go to Phase 3. Dropped candidates are recorded
 as one-line entries in the retro's "Dropped at triage" section — they exist for
 your own discipline check and for the maintainer to see triage actually ran.
 
