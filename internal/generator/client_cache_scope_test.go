@@ -360,6 +360,12 @@ func TestWriteCacheSweepsExpiredEntriesInNamespace(t *testing.T) {
 	if !ok || string(got) != ` + "`" + `{"ok":true}` + "`" + ` {
 		t.Fatalf("fresh write not readable after sweep: ok=%v body=%s", ok, got)
 	}
+
+	// A second write inside the TTL must not list the namespace again.
+	again := filepath.Join(c.cacheResourceDir("/items"), "again.json")
+	writeAgedCacheFile(t, again, 2*responseCacheTTL)
+	c.writeCacheWithHeaders("/items", map[string]string{"page": "2"}, nil, json.RawMessage(` + "`" + `{"ok":true}` + "`" + `))
+	requireCacheFileKept(t, again)
 }
 `
 	require.NoError(t, os.WriteFile(filepath.Join(outputDir, "internal", "client", "cache_sweep_runtime_test.go"), []byte(runtimeTest), 0o600))

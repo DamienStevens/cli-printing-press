@@ -1686,13 +1686,18 @@ func (c *Client) writeCacheWithHeaders(path string, params map[string]string, he
 	if c.platformSession != nil {
 		c.writePlatformCacheMetadata(cacheFile)
 	}
-	sweepExpiredCacheDir(resourceDir, time.Now())
+	sweepExpiredCacheDirThrottled(resourceDir, time.Now())
 }
 
 // responseCacheTTL bounds how long a cached GET body may be served. The same
 // window decides when the sweep deletes the file, so nothing the read path
 // would reject stays on disk.
 const responseCacheTTL = 5 * time.Minute
+
+// responseCacheSweptAt records when this process last swept each namespace
+// dir, so a burst of writes (paged exports, syncs) lists a namespace at most
+// once per TTL instead of once per write.
+var responseCacheSweptAt sync.Map
 
 // sweepExpiredCache deletes expired response files across every resource
 // namespace. Expiry is otherwise only checked on read, so cached API payloads
@@ -1710,9 +1715,21 @@ func (c *Client) sweepExpiredCache() {
 	now := time.Now()
 	for _, namespace := range namespaces {
 		if namespace.IsDir() {
-			sweepExpiredCacheDir(filepath.Join(root, namespace.Name()), now)
+			dir := filepath.Join(root, namespace.Name())
+			responseCacheSweptAt.Store(dir, now)
+			sweepExpiredCacheDir(dir, now)
 		}
 	}
+}
+
+func sweepExpiredCacheDirThrottled(dir string, now time.Time) {
+	if last, ok := responseCacheSweptAt.Load(dir); ok {
+		if at, ok := last.(time.Time); ok && now.Sub(at) < responseCacheTTL {
+			return
+		}
+	}
+	responseCacheSweptAt.Store(dir, now)
+	sweepExpiredCacheDir(dir, now)
 }
 
 // sweepExpiredCacheDir removes regular files in one namespace whose mtime is
