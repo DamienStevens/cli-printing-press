@@ -26,6 +26,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func runRoot(t *testing.T, flags *rootFlags, args ...string) error {
@@ -56,8 +58,21 @@ func TestNoLocalDataForcesLiveReadsAndBlocksStoreWrites(t *testing.T) {
 	if err := runRoot(t, &rootFlags{}, "version", "--data-source", "auto"); err == nil || !strings.Contains(err.Error(), noLocalDataEnvVar) {
 		t.Fatalf("explicit --data-source auto under the switch: err=%v", err)
 	}
-	if err := runRoot(t, &rootFlags{}, "sync"); err == nil || !strings.Contains(err.Error(), "sync is disabled") {
-		t.Fatalf("sync under the switch: err=%v", err)
+	flags = &rootFlags{}
+	if err := runRoot(t, flags, "version", "--data-source", "local"); err != nil || flags.dataSource != "local" {
+		t.Fatalf("explicit local read under the switch: dataSource=%q err=%v", flags.dataSource, err)
+	}
+	for _, args := range [][]string{{"sync"}, {"workflow", "archive"}} {
+		if err := runRoot(t, &rootFlags{}, args...); err == nil || !strings.Contains(err.Error(), "is disabled while") {
+			t.Fatalf("%v under the switch: err=%v", args, err)
+		}
+	}
+	root := &cobra.Command{Use: "local-env-pp-cli"}
+	localOnly := &cobra.Command{Use: "digest", Annotations: map[string]string{"pp:data-source": "local"}}
+	root.AddCommand(localOnly)
+	flags = &rootFlags{dataSource: "auto"}
+	if err := applyLocalDataEnv(localOnly, flags); err != nil || flags.dataSource != "local" {
+		t.Fatalf("local-only command under the switch: dataSource=%q err=%v", flags.dataSource, err)
 	}
 }
 
