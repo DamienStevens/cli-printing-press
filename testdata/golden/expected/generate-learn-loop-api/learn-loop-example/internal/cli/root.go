@@ -464,6 +464,7 @@ Run 'learn-loop-example-pp-cli doctor' to verify auth and connectivity.`,
 		return nil
 	}
 	rootCmd.AddCommand(newDoctorCmd(flags))
+	rootCmd.AddCommand(newLocalDataCmd(flags))
 	if registeredPlatformSource != nil {
 		attachPlatformClientCommands(rootCmd, flags)
 	}

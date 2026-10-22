@@ -634,6 +634,7 @@ Run '{{.Name}}-pp-cli doctor' to {{if .HasAuthCommand}}verify auth and connectiv
 {{- end}}
 {{- end}}
 	rootCmd.AddCommand(newDoctorCmd(flags))
+	rootCmd.AddCommand(newLocalDataCmd(flags))
 	if registeredPlatformSource != nil {
 		attachPlatformClientCommands(rootCmd, flags)
 	}

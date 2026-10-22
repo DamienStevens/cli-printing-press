@@ -445,6 +445,7 @@ Run 'fastapi-operationids-golden-pp-cli doctor' to verify connectivity.`,
 	}
 	rootCmd.AddCommand(newQuotesCmd(flags))
 	rootCmd.AddCommand(newDoctorCmd(flags))
+	rootCmd.AddCommand(newLocalDataCmd(flags))
 	if registeredPlatformSource != nil {
 		attachPlatformClientCommands(rootCmd, flags)
 	}

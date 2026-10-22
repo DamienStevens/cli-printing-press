@@ -485,6 +485,7 @@ Run 'printing-press-golden-pp-cli doctor' to verify auth and connectivity.`,
 	rootCmd.AddCommand(newProjectsCmd(flags))
 	rootCmd.AddCommand(newReportsCmd(flags))
 	rootCmd.AddCommand(newDoctorCmd(flags))
+	rootCmd.AddCommand(newLocalDataCmd(flags))
 	if registeredPlatformSource != nil {
 		attachPlatformClientCommands(rootCmd, flags)
 	}
