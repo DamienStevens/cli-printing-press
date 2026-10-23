@@ -9690,13 +9690,13 @@ func endpointHasMCPUpload(endpoint spec.Endpoint) bool {
 }
 
 // mcpUploadConfirmArg names a typed upload tool's confirm argument: "confirm",
-// or "confirm_upload" (then "confirm_upload_upload", ...) when an API input
-// already uses that name, so the gate never shadows an API parameter. The
-// generated handler derives the same name from its bindings
-// (mcpUploadConfirmName in mcp_tools.go.tmpl).
-func mcpUploadConfirmArg(endpoint spec.Endpoint) string {
+// or "confirm_upload" (then "confirm_upload_upload", ...) when a tool input
+// (an API param or a global path template input) already uses that name, so
+// the gate never shadows another input. The generated handler derives the same
+// name from its bindings (mcpUploadConfirmName in mcp_tools.go.tmpl).
+func mcpUploadConfirmArg(endpoint spec.Endpoint, globalInputs []spec.Param) string {
 	taken := map[string]bool{}
-	for _, p := range mcpToolInputParams(endpoint) {
+	for _, p := range append(mcpToolInputParams(endpoint), globalInputs...) {
 		taken[mcpInputName(p)] = true
 	}
 	name := "confirm"

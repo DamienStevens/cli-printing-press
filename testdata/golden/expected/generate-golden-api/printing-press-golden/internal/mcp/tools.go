@@ -433,7 +433,7 @@ func writeMCPUploadTemp(name string, data []byte) (string, func(), error) {
 
 // mcpUploadConfirmName names a typed upload tool's confirm argument the same
 // way the generator's mcpUploadConfirmArg does: "confirm", or "confirm_upload"
-// (and so on) when an API input already uses that name.
+// (and so on) when another tool input already uses that name.
 func mcpUploadConfirmName(bindings []mcpParamBinding) string {
 	taken := make(map[string]bool, len(bindings))
 	for _, b := range bindings {

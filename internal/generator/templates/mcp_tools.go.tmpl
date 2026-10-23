@@ -98,7 +98,7 @@ func RegisterTools(s *server.MCPServer) {
 {{- end}}
 {{- end}}
 {{- if endpointHasMCPUpload $endpoint}}
-			mcplib.WithBoolean({{printf "%q" (mcpUploadConfirmArg $endpoint)}}, mcplib.Description("Set to boolean true to perform the upload. Any other value, including the string \"true\", returns a preview (endpoint, file field, filename, byte size) and does not contact the API.")),
+			mcplib.WithBoolean({{printf "%q" (mcpUploadConfirmArg $endpoint (mcpGlobalTemplateInputParams $endpoint (effectiveEndpointPath $resource $endpoint) $.GlobalPathTemplateVars))}}, mcplib.Description("Set to boolean true to perform the upload. Any other value, including the string \"true\", returns a preview (endpoint, file field, filename, byte size) and does not contact the API.")),
 {{- end}}
 {{- if mcpExposeOpaqueCursor $mcpPageResource $eName $endpoint}}
 			mcplib.WithString("cursor", mcplib.Description("Opaque pagination cursor returned by a previous MCP response")),
@@ -147,7 +147,7 @@ func RegisterTools(s *server.MCPServer) {
 {{- end}}
 {{- end}}
 {{- if endpointHasMCPUpload $endpoint}}
-			mcplib.WithBoolean({{printf "%q" (mcpUploadConfirmArg $endpoint)}}, mcplib.Description("Set to boolean true to perform the upload. Any other value, including the string \"true\", returns a preview (endpoint, file field, filename, byte size) and does not contact the API.")),
+			mcplib.WithBoolean({{printf "%q" (mcpUploadConfirmArg $endpoint (mcpGlobalTemplateInputParams $endpoint (effectiveSubEndpointPath $resource $subResource $endpoint) $.GlobalPathTemplateVars))}}, mcplib.Description("Set to boolean true to perform the upload. Any other value, including the string \"true\", returns a preview (endpoint, file field, filename, byte size) and does not contact the API.")),
 {{- end}}
 {{- if mcpExposeOpaqueCursor $mcpPageResource $eName $endpoint}}
 			mcplib.WithString("cursor", mcplib.Description("Opaque pagination cursor returned by a previous MCP response")),
@@ -585,7 +585,7 @@ func writeMCPUploadTemp(name string, data []byte) (string, func(), error) {
 
 // mcpUploadConfirmName names a typed upload tool's confirm argument the same
 // way the generator's mcpUploadConfirmArg does: "confirm", or "confirm_upload"
-// (and so on) when an API input already uses that name.
+// (and so on) when another tool input already uses that name.
 func mcpUploadConfirmName(bindings []mcpParamBinding) string {
 	taken := make(map[string]bool, len(bindings))
 	for _, b := range bindings {

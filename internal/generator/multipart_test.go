@@ -880,3 +880,24 @@ func TestTypedUploadDroppedUnderReadOnly(t *testing.T) {
 	require.Contains(t, out, "--- PASS: TestTypedUploadDroppedUnderReadOnly")
 	requireGeneratedCompiles(t, outputDir)
 }
+
+// TestMCPUploadConfirmArgAvoidsEveryToolInput pins the confirm argument name
+// rule the schema and the generated handler share: global path template
+// inputs count as taken names, not only the endpoint's own params.
+func TestMCPUploadConfirmArgAvoidsEveryToolInput(t *testing.T) {
+	t.Parallel()
+
+	upload := spec.Endpoint{
+		Method:             "POST",
+		Path:               "/{confirm}/assets",
+		RequestContentType: "multipart/form-data",
+		Body:               []spec.Param{{Name: "file", Type: "string", Format: "binary"}},
+	}
+	assert.Equal(t, "confirm", mcpUploadConfirmArg(upload, nil))
+	global := mcpGlobalTemplateInputParams(upload, upload.Path, []string{"confirm"})
+	require.Len(t, global, 1)
+	assert.Equal(t, "confirm_upload", mcpUploadConfirmArg(upload, global))
+
+	upload.Body = append(upload.Body, spec.Param{Name: "confirm_upload", Type: "boolean"})
+	assert.Equal(t, "confirm_upload_upload", mcpUploadConfirmArg(upload, global))
+}
