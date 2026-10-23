@@ -461,6 +461,7 @@ func New(s *spec.APISpec, outputDir string) *Generator {
 		"bodyHasStringBackedBool":             bodyHasStringBackedBool,
 		"multipartBodyMaps":                   multipartBodyMaps,
 		"endpointUsesMultipart":               endpointUsesMultipart,
+		"endpointHasMCPUpload":                endpointHasMCPUpload,
 		"isBinaryParam":                       isBinaryParam,
 		"endpointHasJSONBody":                 endpointHasJSONBody,
 		"endpointReplaySafe":                  endpointReplaySafe,
@@ -9678,6 +9679,21 @@ func endpointUsesMultipart(endpoint spec.Endpoint) bool {
 
 func hasMultipartRequest(apiSpec *spec.APISpec) bool {
 	return anyEndpointMatches(apiSpec, endpointUsesMultipart)
+}
+
+// endpointHasMCPUpload reports whether the typed MCP tool for endpoint takes a
+// binary multipart file param. Such a tool previews the upload until the
+// caller passes confirm: true.
+func endpointHasMCPUpload(endpoint spec.Endpoint) bool {
+	if !endpointUsesMultipart(endpoint) {
+		return false
+	}
+	for _, p := range mcpToolInputParams(endpoint) {
+		if isBinaryParam(p) {
+			return true
+		}
+	}
+	return false
 }
 
 func endpointUsesForm(endpoint spec.Endpoint) bool {

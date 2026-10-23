@@ -103,6 +103,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("caption", mcplib.Description("Caption")),
 			mcplib.WithString("file", mcplib.Description("File. base64-encoded file content (a filesystem path is accepted only when PRINTING_PRESS_GOLDEN_MCP_UPLOAD_ROOT is set)")),
 			mcplib.WithString("file_filename", mcplib.Description("Optional filename for this upload (for example photo.png); servers may sniff the format from the extension. Sanitized to a base name; path separators and control characters are rejected. Defaults to the parameter name.")),
+			mcplib.WithBoolean("confirm", mcplib.Description("Set to boolean true to perform the upload. Any other value, including the string \"true\", returns a preview (endpoint, file field, filename, byte size) and does not contact the API.")),
 			mcplib.WithSchemaAdditionalProperties(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
@@ -430,6 +431,40 @@ func writeMCPUploadTemp(name string, data []byte) (string, func(), error) {
 	return path, cleanup, nil
 }
 
+// mcpUploadPreview describes a pending multipart upload without running it:
+// the endpoint plus each file field's staged filename and byte size. It never
+// includes file content.
+func mcpUploadPreview(method, path string, files map[string]string) (*mcplib.CallToolResult, error) {
+	fields := make([]string, 0, len(files))
+	for field := range files {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+	uploads := make([]map[string]any, 0, len(fields))
+	for _, field := range fields {
+		info, err := os.Stat(files[field])
+		if err != nil {
+			return mcpToolError(fmt.Sprintf("stat staged upload %q: %v", field, err)), nil
+		}
+		uploads = append(uploads, map[string]any{
+			"field":    field,
+			"filename": filepath.Base(files[field]),
+			"bytes":    info.Size(),
+		})
+	}
+	text, err := bound.JSON(map[string]any{
+		"preview":               true,
+		"confirmation_required": true,
+		"method":                method,
+		"path":                  path,
+		"uploads":               uploads,
+	})
+	if err != nil {
+		return mcpToolError(fmt.Sprintf("encoding upload preview: %v", err)), nil
+	}
+	return mcplib.NewToolResultText(text), nil
+}
+
 // mcpUploadFileName picks a safe multipart filename: the sanitized caller hint
 // when usable, otherwise the sanitized parameter name, otherwise "upload".
 func mcpUploadFileName(field, hint string) string {
@@ -563,9 +598,11 @@ func makeAPIHandler(method, pathTemplate string, readOnly bool, binaryResponse b
 				multipart = true
 			}
 			if strings.EqualFold(binding.Format, "binary") {
-				// The optional companion filename arg is declared in the tool
-				// schema; register it so rejectUndeclaredMCPArgs accepts it.
+				// The optional companion filename arg and the upload confirm
+				// arg are declared in the tool schema; register them so
+				// rejectUndeclaredMCPArgs accepts them.
 				knownArgs[binding.PublicName+"_filename"] = true
+				knownArgs["confirm"] = true
 			}
 			v, ok := args[binding.PublicName]
 			if !ok {
@@ -659,6 +696,14 @@ func makeAPIHandler(method, pathTemplate string, readOnly bool, binaryResponse b
 				}
 			} else if s, ok := params[pageConfig.CursorParam]; ok && s != "" {
 				requestCursor = s
+			}
+		}
+		// A file upload sends caller-supplied bytes to the API, so, like the
+		// confirm step on <api>_execute, it returns a preview until confirm is
+		// boolean true. The string "true" stays a preview.
+		if multipart && len(multipartFileFields) > 0 {
+			if confirmed, ok := args["confirm"].(bool); !ok || !confirmed {
+				return mcpUploadPreview(method, path, multipartFileFields)
 			}
 		}
 
