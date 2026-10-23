@@ -1650,7 +1650,7 @@ func (c *Client) writeCacheWithHeaders(path string, params map[string]string, he
 	if c.platformSession != nil {
 		c.writePlatformCacheMetadata(cacheFile)
 	}
-	sweepExpiredCacheDirThrottled(resourceDir, time.Now())
+	sweepCacheNamespaceAfterWrite(resourceDir, time.Now())
 }
 
 // responseCacheTTL bounds how long a cached GET body may be served. The same
@@ -1686,7 +1686,7 @@ func (c *Client) sweepExpiredCache() {
 	}
 }
 
-func sweepExpiredCacheDirThrottled(dir string, now time.Time) {
+func sweepCacheNamespaceAfterWrite(dir string, now time.Time) {
 	if last, ok := responseCacheSweptAt.Load(dir); ok {
 		if at, ok := last.(time.Time); ok && now.Sub(at) < responseCacheTTL {
 			return
