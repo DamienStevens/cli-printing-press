@@ -829,23 +829,35 @@ func (o Options) validate() error {
 	return nil
 }
 
-// checkOrigin refuses an existing checkout whose origin is not opts.Remote, so
-// a --repo pointing at some other clone cannot redirect a publish or subscribe
-// away from the pinned remote. The configured URL is compared as written (not
-// after insteadOf rewriting). Local-only options (empty Remote) never fetch or
-// push and are not checked.
+// checkOrigin refuses an existing checkout whose origin fetch or push URLs are
+// not opts.Remote, so a --repo pointing at some other clone cannot redirect a
+// publish or subscribe away from the pinned remote. Every remote.origin.url and
+// remote.origin.pushurl value must match, compared as written (not after
+// insteadOf rewriting). Local-only options (empty Remote) never fetch or push
+// and are not checked.
 func checkOrigin(ctx context.Context, opts Options) error {
 	remote := strings.TrimSpace(opts.Remote)
 	if remote == "" {
 		return nil
 	}
-	out, err := gitOutput(ctx, opts.RepoPath, "config", "--get", "remote.origin.url")
-	origin := strings.TrimSpace(out)
-	if err != nil {
-		origin = ""
-	}
-	if origin != remote {
-		return fmt.Errorf("share repo %s has origin %q, not the pinned remote %q; remove it or pass a different --repo", opts.RepoPath, origin, remote)
+	for _, key := range []string{"remote.origin.url", "remote.origin.pushurl"} {
+		out, err := gitOutput(ctx, opts.RepoPath, "config", "--get-all", key)
+		var exitErr *exec.ExitError
+		if err != nil && !(errors.As(err, &exitErr) && exitErr.ExitCode() == 1) {
+			return fmt.Errorf("read %s in share repo %s: %w", key, opts.RepoPath, err)
+		}
+		out = strings.TrimSpace(out)
+		if out == "" {
+			if key == "remote.origin.url" {
+				return fmt.Errorf("share repo %s has no origin, not the pinned remote %q; remove it or pass a different --repo", opts.RepoPath, remote)
+			}
+			continue
+		}
+		for _, v := range strings.Split(out, "\n") {
+			if strings.TrimSpace(v) != remote {
+				return fmt.Errorf("share repo %s has %s %q, not the pinned remote %q; remove it or pass a different --repo", opts.RepoPath, key, strings.TrimSpace(v), remote)
+			}
+		}
 	}
 	return nil
 }

@@ -495,4 +495,16 @@ func TestShare_RefusesCheckoutWithUnpinnedOrigin(t *testing.T) {
 	if err := EnsureRepo(ctx, pinned); err != nil {
 		t.Fatalf("checkout whose origin is the pinned remote was refused: %v", err)
 	}
+	// A matching fetch URL with a different push URL is refused too.
+	if err := runGit(ctx, repoDir, "config", "--add", "remote.origin.pushurl", "https://example.invalid/other.git"); err != nil {
+		t.Fatalf("add pushurl: %v", err)
+	}
+	for name, call := range map[string]func() error{
+		"EnsureRepo": func() error { return EnsureRepo(ctx, pinned) },
+		"Push":       func() error { return Push(ctx, pinned) },
+	} {
+		if err := call(); err == nil || !strings.Contains(err.Error(), "not the pinned remote") {
+			t.Fatalf("%s with a foreign pushurl: got %v, want a pinned-remote refusal", name, err)
+		}
+	}
 }
