@@ -9685,15 +9685,7 @@ func hasMultipartRequest(apiSpec *spec.APISpec) bool {
 // binary multipart file param. Such a tool previews the upload until the
 // caller passes confirm: true.
 func endpointHasMCPUpload(endpoint spec.Endpoint) bool {
-	if !endpointUsesMultipart(endpoint) {
-		return false
-	}
-	for _, p := range mcpToolInputParams(endpoint) {
-		if isBinaryParam(p) {
-			return true
-		}
-	}
-	return false
+	return endpointUsesMultipart(endpoint) && slices.ContainsFunc(mcpToolInputParams(endpoint), isBinaryParam)
 }
 
 func endpointUsesForm(endpoint spec.Endpoint) bool {
