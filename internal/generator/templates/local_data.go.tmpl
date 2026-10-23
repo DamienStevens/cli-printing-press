@@ -130,7 +130,11 @@ func collectLocalDataTargets(kinds map[string]bool) ([]localDataTarget, error) {
 		if err != nil {
 			return nil, err
 		}
-		targets = append(targets, matchingLocalFiles(localDataKindStore, dir, localStoreFilePattern)...)
+		found, err := matchingLocalFiles(localDataKindStore, dir, localStoreFilePattern)
+		if err != nil {
+			return nil, err
+		}
+		targets = append(targets, found...)
 	}
 	if want(localDataKindCache) {
 		dir, err := cliutil.CacheDir()
@@ -138,8 +142,12 @@ func collectLocalDataTargets(kinds map[string]bool) ([]localDataTarget, error) {
 			return nil, err
 		}
 		httpDir := filepath.Join(dir, "http")
-		if info, err := os.Lstat(httpDir); err == nil && info.IsDir() {
+		info, err := os.Lstat(httpDir)
+		switch {
+		case err == nil && info.IsDir():
 			targets = append(targets, localDataTarget{Kind: localDataKindCache, Path: httpDir, Bytes: localTreeBytes(httpDir), dir: true})
+		case err != nil && !errors.Is(err, fs.ErrNotExist):
+			return nil, fmt.Errorf("inspect response cache: %w", err)
 		}
 	}
 	if want(localDataKindJournal) {
@@ -147,15 +155,25 @@ func collectLocalDataTargets(kinds map[string]bool) ([]localDataTarget, error) {
 		if err != nil {
 			return nil, err
 		}
-		targets = append(targets, matchingLocalFiles(localDataKindJournal, filepath.Join(dir, "learn"), localJournalFilePattern)...)
+		found, err := matchingLocalFiles(localDataKindJournal, filepath.Join(dir, "learn"), localJournalFilePattern)
+		if err != nil {
+			return nil, err
+		}
+		targets = append(targets, found...)
 	}
 	return targets, nil
 }
 
-func matchingLocalFiles(kind, dir string, pattern *regexp.Regexp) []localDataTarget {
+// matchingLocalFiles treats only a missing dir as empty. Any other read
+// failure is returned so purge never reports data it could not inspect as
+// erased.
+func matchingLocalFiles(kind, dir string, pattern *regexp.Regexp) ([]localDataTarget, error) {
 	entries, err := os.ReadDir(dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("inspect %s: %w", dir, err)
 	}
 	var targets []localDataTarget
 	for _, entry := range entries {
@@ -168,7 +186,7 @@ func matchingLocalFiles(kind, dir string, pattern *regexp.Regexp) []localDataTar
 		}
 		targets = append(targets, target)
 	}
-	return targets
+	return targets, nil
 }
 
 func localTreeBytes(root string) int64 {

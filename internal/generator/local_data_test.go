@@ -21,6 +21,9 @@ func TestGeneratedLocalDataPurge(t *testing.T) {
 	localData, err := os.ReadFile(filepath.Join(outputDir, "internal", "cli", "local_data.go"))
 	require.NoError(t, err)
 	require.Contains(t, string(localData), `"mcp:hidden": "true"`, "purge deletes local files and must stay off the MCP surface")
+	platformSrc, err := os.ReadFile(filepath.Join(outputDir, "internal", "cli", "platform_client.go"))
+	require.NoError(t, err)
+	require.Contains(t, string(platformSrc), `"api", "local-data":`, "erasing local files must not need a live tenant gate")
 
 	const runtimeTest = `package cli
 
@@ -29,6 +32,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -102,6 +106,51 @@ func TestLocalDataPurgeDryRunThenDelete(t *testing.T) {
 		if _, err := os.Stat(path); err != nil {
 			t.Fatalf("purge removed %s: %v", path, err)
 		}
+	}
+}
+
+func TestLocalDataPurgeThroughExecuteLeavesNothingBehind(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("PRINTING_PRESS_VERIFY", "")
+	t.Setenv("PRINTING_PRESS_DOGFOOD", "")
+	purged := seedLocalFiles(t, home, "state/learn/journal-20261022.jsonl", "cache/http/resources/items/k.json")
+	oldArgs := os.Args
+	t.Cleanup(func() { os.Args = oldArgs })
+	for _, args := range [][]string{{"local-data", "purge", "--home", home}, {"local-data", "purge", "--yes", "--home", home}} {
+		os.Args = append([]string{"local-data-pp-cli"}, args...)
+		if err := Execute(); err != nil {
+			t.Fatalf("Execute %v: %v", args, err)
+		}
+		if matches, _ := filepath.Glob(filepath.Join(home, "data", "data*.db")); len(matches) != 0 {
+			t.Fatalf("%v opened the store as a side effect: %v", args, matches)
+		}
+	}
+	for _, path := range purged {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("%s survived purge, or the learn journal recreated it", path)
+		}
+	}
+	if matches, _ := filepath.Glob(filepath.Join(home, "state", "learn", "journal-*.jsonl")); len(matches) != 0 {
+		t.Fatalf("journal recreated after purge: %v", matches)
+	}
+}
+
+func TestLocalDataPurgeReportsUnreadableDir(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs Unix permission bits and a non-root user")
+	}
+	home := relocateLocalData(t)
+	seedLocalFiles(t, home, "data/data.db")
+	dataDir := filepath.Join(home, "data")
+	if err := os.Chmod(dataDir, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dataDir, 0o700) })
+	cmd := newLocalDataCmd(&rootFlags{yes: true})
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetArgs([]string{"purge"})
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "inspect") {
+		t.Fatalf("unreadable data dir was treated as empty: err=%v", err)
 	}
 }
 
