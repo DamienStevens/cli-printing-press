@@ -431,6 +431,21 @@ func writeMCPUploadTemp(name string, data []byte) (string, func(), error) {
 	return path, cleanup, nil
 }
 
+// mcpUploadConfirmName names a typed upload tool's confirm argument the same
+// way the generator's mcpUploadConfirmArg does: "confirm", or "confirm_upload"
+// (and so on) when an API input already uses that name.
+func mcpUploadConfirmName(bindings []mcpParamBinding) string {
+	taken := make(map[string]bool, len(bindings))
+	for _, b := range bindings {
+		taken[b.PublicName] = true
+	}
+	name := "confirm"
+	for taken[name] {
+		name += "_upload"
+	}
+	return name
+}
+
 // mcpUploadPreview describes a pending multipart upload without running it:
 // the endpoint plus each file field's staged filename and byte size. It never
 // includes file content.
@@ -523,6 +538,7 @@ func sanitizeMCPUploadName(candidate string) (string, bool) {
 
 // makeAPIHandler creates a generic MCP tool handler for an API endpoint.
 func makeAPIHandler(method, pathTemplate string, readOnly bool, binaryResponse bool, headerOverrides map[string]string, pageConfig mcpPageConfig, bindings []mcpParamBinding, positionalParams []string) server.ToolHandlerFunc {
+	uploadConfirmArg := mcpUploadConfirmName(bindings)
 	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 		c, platformSession, err := newMCPClient(ctx)
 		if err != nil {
@@ -602,7 +618,7 @@ func makeAPIHandler(method, pathTemplate string, readOnly bool, binaryResponse b
 				// arg are declared in the tool schema; register them so
 				// rejectUndeclaredMCPArgs accepts them.
 				knownArgs[binding.PublicName+"_filename"] = true
-				knownArgs["confirm"] = true
+				knownArgs[uploadConfirmArg] = true
 			}
 			v, ok := args[binding.PublicName]
 			if !ok {
@@ -699,10 +715,10 @@ func makeAPIHandler(method, pathTemplate string, readOnly bool, binaryResponse b
 			}
 		}
 		// A file upload sends caller-supplied bytes to the API, so, like the
-		// confirm step on <api>_execute, it returns a preview until confirm is
-		// boolean true. The string "true" stays a preview.
+		// confirm step on <api>_execute, it returns a preview until the confirm
+		// argument is boolean true. The string "true" stays a preview.
 		if multipart && len(multipartFileFields) > 0 {
-			if confirmed, ok := args["confirm"].(bool); !ok || !confirmed {
+			if confirmed, ok := args[uploadConfirmArg].(bool); !ok || !confirmed {
 				return mcpUploadPreview(method, path, multipartFileFields)
 			}
 		}

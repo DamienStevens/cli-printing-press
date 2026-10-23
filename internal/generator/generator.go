@@ -462,6 +462,7 @@ func New(s *spec.APISpec, outputDir string) *Generator {
 		"multipartBodyMaps":                   multipartBodyMaps,
 		"endpointUsesMultipart":               endpointUsesMultipart,
 		"endpointHasMCPUpload":                endpointHasMCPUpload,
+		"mcpUploadConfirmArg":                 mcpUploadConfirmArg,
 		"isBinaryParam":                       isBinaryParam,
 		"endpointHasJSONBody":                 endpointHasJSONBody,
 		"endpointReplaySafe":                  endpointReplaySafe,
@@ -9686,6 +9687,23 @@ func hasMultipartRequest(apiSpec *spec.APISpec) bool {
 // caller passes confirm: true.
 func endpointHasMCPUpload(endpoint spec.Endpoint) bool {
 	return endpointUsesMultipart(endpoint) && slices.ContainsFunc(mcpToolInputParams(endpoint), isBinaryParam)
+}
+
+// mcpUploadConfirmArg names a typed upload tool's confirm argument: "confirm",
+// or "confirm_upload" (then "confirm_upload_upload", ...) when an API input
+// already uses that name, so the gate never shadows an API parameter. The
+// generated handler derives the same name from its bindings
+// (mcpUploadConfirmName in mcp_tools.go.tmpl).
+func mcpUploadConfirmArg(endpoint spec.Endpoint) string {
+	taken := map[string]bool{}
+	for _, p := range mcpToolInputParams(endpoint) {
+		taken[mcpInputName(p)] = true
+	}
+	name := "confirm"
+	for taken[name] {
+		name += "_upload"
+	}
+	return name
 }
 
 func endpointUsesForm(endpoint spec.Endpoint) bool {

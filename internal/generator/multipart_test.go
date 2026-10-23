@@ -701,6 +701,21 @@ func TestMCPMultipartUploadPreviewsUntilConfirm(t *testing.T) {
 				},
 			},
 			SubResources: map[string]spec.Resource{
+				"imports": {
+					Description: "Asset imports",
+					Endpoints: map[string]spec.Endpoint{
+						"upload": {
+							Method:             "POST",
+							Path:               "/assets/imports",
+							Description:        "Import an asset file",
+							RequestContentType: "multipart/form-data",
+							Body: []spec.Param{
+								{Name: "file", Type: "string", Format: "binary", Required: true, Description: "Import file"},
+								{Name: "confirm", Type: "boolean", Description: "API flag that confirms overwrites"},
+							},
+						},
+					},
+				},
 				"versions": {
 					Description: "Asset versions",
 					Endpoints: map[string]spec.Endpoint{
@@ -722,8 +737,9 @@ func TestMCPMultipartUploadPreviewsUntilConfirm(t *testing.T) {
 	require.NoError(t, New(apiSpec, outputDir).Generate())
 
 	mcpSrc := readGeneratedFile(t, outputDir, "internal", "mcp", "tools.go")
-	assert.Equal(t, 2, strings.Count(mcpSrc, `mcplib.WithBoolean("confirm"`), "each typed upload tool declares confirm once")
-	assert.Contains(t, mcpSrc, `knownArgs["confirm"] = true`)
+	assert.Equal(t, 3, strings.Count(mcpSrc, "Set to boolean true to perform the upload"), "each typed upload tool declares one confirm argument")
+	assert.Equal(t, 1, strings.Count(mcpSrc, `mcplib.WithBoolean("confirm_upload"`), "an API input named confirm moves the gate to confirm_upload")
+	assert.Contains(t, mcpSrc, `knownArgs[uploadConfirmArg] = true`)
 	assert.Contains(t, mcpSrc, `return mcpUploadPreview(method, path, multipartFileFields)`)
 
 	runtimeTest := strings.ReplaceAll(`package mcp
@@ -760,13 +776,13 @@ func TestTypedUploadPreviewsUntilConfirm(t *testing.T) {
 
 	s := server.NewMCPServer("test", "0.0.0")
 	RegisterTools(s)
-	for _, name := range []string{"assets_upload", "assets_versions_upload"} {
+	for name, arg := range map[string]string{"assets_upload": "confirm", "assets_versions_upload": "confirm", "assets_imports_upload": "confirm_upload"} {
 		tool := s.ListTools()[name]
 		if tool == nil {
 			t.Fatalf("%s not registered", name)
 		}
-		if _, ok := tool.Tool.InputSchema.Properties["confirm"]; !ok {
-			t.Fatalf("%s schema does not declare confirm", name)
+		if _, ok := tool.Tool.InputSchema.Properties[arg]; !ok {
+			t.Fatalf("%s schema does not declare %s", name, arg)
 		}
 	}
 	if _, ok := s.ListTools()["assets_list"].Tool.InputSchema.Properties["confirm"]; ok {
@@ -825,6 +841,20 @@ func TestTypedUploadPreviewsUntilConfirm(t *testing.T) {
 	if body := <-bodies; !strings.Contains(body, content) || !strings.Contains(body, "notes.txt") {
 		t.Fatalf("confirmed upload body missing the file:\n%s", body)
 	}
+
+	// An API input named confirm keeps its meaning: it is sent to the API and
+	// does not unlock the upload; confirm_upload does.
+	out = call("assets_imports_upload", map[string]any{"file": encoded, "confirm": true})
+	if !strings.Contains(out, `+"`"+`"confirmation_required": true`+"`"+`) || hits.Load() != 1 {
+		t.Fatalf("API confirm param unlocked the upload (hits=%d):\n%s", hits.Load(), out)
+	}
+	call("assets_imports_upload", map[string]any{"file": encoded, "confirm": false, "confirm_upload": true})
+	if n := hits.Load(); n != 2 {
+		t.Fatalf("confirm_upload made %d total request(s), want 2", n)
+	}
+	if body := <-bodies; !strings.Contains(body, content) || !strings.Contains(body, `+"`"+`name="confirm"`+"`"+`) || !strings.Contains(body, "false") {
+		t.Fatalf("import body missing the file or the API confirm=false field:\n%s", body)
+	}
 }
 
 func TestTypedUploadDroppedUnderReadOnly(t *testing.T) {
@@ -832,7 +862,7 @@ func TestTypedUploadDroppedUnderReadOnly(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	s := server.NewMCPServer("test", "0.0.0")
 	RegisterTools(s)
-	for _, name := range []string{"assets_upload", "assets_versions_upload"} {
+	for _, name := range []string{"assets_upload", "assets_versions_upload", "assets_imports_upload"} {
 		if s.ListTools()[name] != nil {
 			t.Fatalf("%s is registered under the read-only switch", name)
 		}
