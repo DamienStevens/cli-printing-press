@@ -546,10 +546,15 @@ func collectLocalFilesReport() (doctorLocalFiles, string) {
 	report := doctorLocalFiles{StoreFiles: []string{}}
 	aclWarning := ""
 	if dir, err := cliutil.DataDir(); err == nil {
-		matches, _ := filepath.Glob(filepath.Join(dir, "data*.db*"))
-		for _, path := range matches {
-			if info, err := os.Lstat(path); err == nil && info.Mode().IsRegular() {
-				report.StoreFiles = append(report.StoreFiles, path)
+		// Match entry names, not a glob over dir: a relocated dir may contain
+		// pattern characters such as brackets.
+		entries, _ := os.ReadDir(dir)
+		for _, entry := range entries {
+			if matched, _ := filepath.Match("data*.db*", entry.Name()); !matched || !entry.Type().IsRegular() {
+				continue
+			}
+			if info, err := entry.Info(); err == nil {
+				report.StoreFiles = append(report.StoreFiles, filepath.Join(dir, entry.Name()))
 				report.StoreBytes += info.Size()
 			}
 		}

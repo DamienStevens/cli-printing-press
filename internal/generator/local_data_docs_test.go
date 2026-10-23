@@ -48,7 +48,7 @@ import (
 )
 
 func TestDoctorLocalFilesReport(t *testing.T) {
-	home := t.TempDir()
+	home := filepath.Join(t.TempDir(), "[team]")
 	restore, err := cliutil.SetHomeOverride(home)
 	if err != nil {
 		t.Fatal(err)

@@ -406,7 +406,7 @@ claude mcp add printing-press-oauth2-pp-mcp -- printing-press-oauth2-pp-mcp
 
 Verify: `claude mcp list`
 
-For a remote host, `printing-press-oauth2-pp-mcp --transport http` requires `PRINTING_PRESS_OAUTH2_MCP_HTTP_TOKEN` (callers send `Authorization: Bearer <token>`), binds `127.0.0.1:7777` by default, and needs `--tls-cert`/`--tls-key` for any non-loopback `--addr`. `PRINTING_PRESS_OAUTH2_MCP_READ_ONLY=1` drops mirrored write commands and makes the raw execute tool refuse state-changing calls.
+For a remote host, `printing-press-oauth2-pp-mcp --transport http` requires `PRINTING_PRESS_OAUTH2_MCP_HTTP_TOKEN` (callers send `Authorization: Bearer <token>`), binds `127.0.0.1:7777` by default, and needs `--tls-cert`/`--tls-key` for any non-loopback `--addr`. `PRINTING_PRESS_OAUTH2_MCP_READ_ONLY=1` drops mirrored write commands (local-write commands that only touch the CLI's own learn store stay) and makes the raw execute tool refuse state-changing calls.
 
 ## Direct Use
 

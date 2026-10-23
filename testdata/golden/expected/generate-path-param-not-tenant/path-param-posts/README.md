@@ -115,7 +115,7 @@ export PATH_PARAM_POSTS_MCP_HTTP_TOKEN="$(openssl rand -hex 32)"
 path-param-posts-pp-mcp --transport http
 ```
 
-Set `PATH_PARAM_POSTS_MCP_READ_ONLY=1` (exactly `1`) to drop mirrored commands that are not marked read-only and make the raw execute tool refuse state-changing calls.
+Set `PATH_PARAM_POSTS_MCP_READ_ONLY=1` (exactly `1`) to drop mirrored commands that are not marked read-only and make the raw execute tool refuse state-changing calls. Commands marked local-write, which write only this CLI's own learn store, stay available.
 
 ## Quick Start
 
@@ -201,7 +201,7 @@ Existing installs keep working because the platform-default rung matches the leg
 
 ### Local data
 
-Reads are saved locally by default: in `--data-source auto` mode every successful read is also written to the SQLite store (`data.db`, or `data-<hash>.db` per credential) in the data directory. GET responses are cached for five minutes under `http/` in the cache directory. The learn journal lives under `learn/` in the state directory. `path-param-posts-pp-cli doctor` lists these files and their sizes.
+Reads are saved locally by default: in `--data-source auto` mode every successful read is also written to the SQLite store (`data.db`, or `data-<hash>.db` per credential) in the data directory. GET responses are cached for five minutes under `http/` in the cache directory. The learn journal lives under `learn/` in the state directory. `path-param-posts-pp-cli doctor` prints the resolved paths, every store file, and the response-cache size.
 
 None of it is encrypted. New files are created owner-only; beyond that the data relies on OS account permissions and full-disk encryption (FileVault, BitLocker, LUKS).
 
